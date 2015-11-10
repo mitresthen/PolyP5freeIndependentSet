@@ -48,7 +48,7 @@ class VertexCoverListener {
 	}
 
 	public void progress(int k, int n) {
-		listener.progress(k, n);
+//		listener.progress(k, n);
 	}
 
 	public boolean isCancelled() {

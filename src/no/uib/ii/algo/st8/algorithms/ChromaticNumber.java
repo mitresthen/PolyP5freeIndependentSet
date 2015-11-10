@@ -158,7 +158,7 @@ public class ChromaticNumber<V, E> extends Algorithm<V, E, Integer> {
       return ISetWithoutV.add(ISetWithV);
     }
   }
-
+  
   /**
    * Counts the number of ISets that can be formed by a graph of vertices when
    * all vertices have degree <= 2. this is done by finding the number of ISets

@@ -34,6 +34,15 @@ public class GraphGenerator {
 		return c;
 	}
 
+	public static TestGraph star(int n){
+		TestGraph g = new TestGraph();
+		g.addVertex(0);
+		for(int i = 1; i<n; i++){
+			g.addVertex(i);
+			g.addEdge(0, i);
+		}
+		return g;
+	}
 	public static TestGraph path(int n) {
 		TestGraph g = new TestGraph();
 		g.addVertex(0);
@@ -72,21 +81,27 @@ public class GraphGenerator {
 		return g;
 	}
 
-	public static TestGraph randP5Free(int n, float pEdge){
+	public static TestGraph randP5Free(int n){
 		TestGraph g = new TestGraph();
 		for(int i = 0; i<n; i++){
 			g.addVertex(i);
 		}
-
-		for(int i = 0; i<n; i++){
-			for(int j = i+1; j<n; j++){
-				if(RANDOM.nextFloat() <= pEdge){
+		int iterations = n*n*5;
+		for(int k = 0; k<iterations; k++){
+			int i = RANDOM.nextInt(n);
+			int j = RANDOM.nextInt(n);
+			if(i == j)
+				continue;
+			if(g.containsEdge(i, j)){
+				g.removeEdge(i, j);
+				if(!isP5Free(g)){
 					g.addEdge(i, j);
-					if(!isP5Free(g)){
-						g.removeEdge(i, j);
-					}
 				}
-
+			}else {
+				g.addEdge(i, j);
+				if(!isP5Free(g)){
+					g.removeEdge(i, j);
+				}
 			}
 		}
 		return g;
@@ -187,6 +202,12 @@ public class GraphGenerator {
 
 	}
 
+	/**
+	 * List components within G[Bp]
+	 * @param g graph
+	 * @param Bp vertex set to list components in 
+	 * @return list of components
+	 */
 	public static List<HashSet<Integer>> listComponents(TestGraph g, Set<Integer> Bp){
 		Map<Integer, Integer> comp = new HashMap<Integer,Integer>();
 		int currComp = 0;
@@ -227,8 +248,8 @@ public class GraphGenerator {
 			return false;
 	}
 
-	
-	
+
+
 	public static TestGraph disjointUnion(TestGraph g1, TestGraph g2) {
 		TestGraph g = new TestGraph();
 		SparseIntArray m1 = new SparseIntArray();
@@ -258,5 +279,5 @@ public class GraphGenerator {
 		}
 		return g;
 	}
-	
+
 }

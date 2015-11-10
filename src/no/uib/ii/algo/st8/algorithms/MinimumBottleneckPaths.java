@@ -14,19 +14,32 @@ import org.jgrapht.graph.SimpleGraph;
 
 /**
  * Node weighted minimal bottleneck path
+ * Finds all paths from an unnumbered node to other unnumbered nodes that go through
+ * unnumbered nodes of weight lower than that of the destination node
  * 
- * @author h�vard
+ * @author haavard
  * 
  */
 public class MinimumBottleneckPaths<V, E> {
 
   SimpleGraph<V, E> graph;
 
+  /**
+   * constructor to initialize all variables
+   * @param graph the graph to run mbp on
+   */
   public MinimumBottleneckPaths(SimpleGraph<V, E> graph) {
     this.graph = graph;
     // TODO Auto-generated constructor stub
   }
 
+  /**
+   * Method to find the set of all nodes that can be reached by the mbp criteria
+   * @param unNumbered list of vertices that can be used as part of a path or a destination node
+   * @param vertex the starting vertex
+   * @param w weights of all vertices in the graph. 
+   * @return set of nodes that can be reached from vertex by mbp
+   */
   public Set<V> mbp(Collection<V> unNumbered, V vertex, Map<V, Integer> w) {
     Set<V> S = new HashSet<V>();
     Queue<Pair<V>> q = new PriorityQueue<Pair<V>>();
