@@ -105,7 +105,7 @@ public class VerifyPMC {
 	 */
 	public static boolean isMinimal(ArrayList<ArrayList<Integer>> G, ArrayList<Integer> V){
 		ArrayList<ArrayList<Integer>> comps = connectedComponents(G,V);
-		if(comps.size() <= 1)
+		if(comps.size() <= 0)
 			return false;
 		Set<Integer> Rel = new HashSet<Integer>(V);
 		for(int i= 0; i<comps.size(); i++){

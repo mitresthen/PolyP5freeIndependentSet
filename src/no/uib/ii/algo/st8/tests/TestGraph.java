@@ -50,4 +50,16 @@ public class TestGraph extends SimpleGraph<Integer, Integer> {
 		System.out.println("}");
 		
 	}
+	public String getDotGraph(){
+		String res ="graph myGraph{";
+		for(Integer i : this.vertexSet()){
+			res += "\n" + i;
+			for(Integer j : this.edgesOf(i))
+				if(Neighbors.opposite(this, i, j) > i)
+					res += "\n" +(i + "--" + Neighbors.opposite(this, i, j) + ";");
+		}
+		res += "\n" +"}";
+		return res;
+		
+	}
 }
