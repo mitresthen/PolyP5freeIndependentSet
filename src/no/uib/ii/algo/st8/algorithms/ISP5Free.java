@@ -117,7 +117,7 @@ public class ISP5Free<V,E> {
 		adjGraph = new HashMap<Integer, Set<Integer>>();
 		graphI = new ArrayList<SimpleGraph<Integer,Integer>>();
 		vList = new ArrayList<Integer>();
-		n = G.vertexSet().size();
+
 		P5freeGraph = new SimpleGraph<Integer, Integer>(new EdgeFactory<Integer, Integer>() {
 			@Override
 			public Integer createEdge(Integer arg0, Integer arg1) {
@@ -144,7 +144,7 @@ public class ISP5Free<V,E> {
 				P5freeGraph.addEdge(i, vMap.get(v));
 			}
 		}
-
+		n = G.vertexSet().size();
 		for(int i = 0; i<n; i++){
 			adjGraph.put(i, new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, i)));
 		}
@@ -322,8 +322,12 @@ public class ISP5Free<V,E> {
 		if(cMap != -1)
 			return cMap;
 		Set<Integer> neigh = (Set<Integer>) Neighbors.openNeighborhood(P5freeGraph, C);
-		if(I == -1  || !neigh.contains(I)){
+		if(I == -1){
 			int k = T2(neigh, C, -1);
+			T1.get(I).get(Z).put(C, k);
+			return k;
+		} else if(!neigh.contains(I)){
+			int k = T2(neigh, C, -1) +1;
 			T1.get(I).get(Z).put(C, k);
 			return k;
 		}
@@ -583,7 +587,7 @@ public class ISP5Free<V,E> {
 				}
 				MinimalTriangulation<Integer, Integer> minTri = new MinimalTriangulation<Integer, Integer>(c);
 				minTri.execute();
-				
+
 				//Find all maximal cliques in the minimal triangulation
 				List<Set<Integer>> maximalCliques = minTri.maximalCliques;
 				boolean[] junk = new boolean[maximalCliques.size()];
@@ -606,7 +610,7 @@ public class ISP5Free<V,E> {
 						NUVmaximalCliques.add(maximalCliques.get(k));
 				}
 				Pi.addAll(NUVmaximalCliques);
-				
+
 			}
 		}
 		return Pi;
@@ -742,25 +746,25 @@ public class ISP5Free<V,E> {
 		if(G.vertexSet().isEmpty())
 			return delta2;
 		Set<Set<Integer>> delta2Set = new HashSet<Set<Integer>>();
-		Set<Set<Integer>> chatus = new HashSet<Set<Integer>>();
-		Set<Set<Integer>> cws = new HashSet<Set<Integer>>();
-		for(Integer u : P5freeGraph.vertexSet()){
-			for(Integer v : P5freeGraph.vertexSet()){
-				if(u.equals(v) || adjGraph.get(u).contains(v)){
+		//		Set<Set<Integer>> chatus = new HashSet<Set<Integer>>();
+		//		Set<Set<Integer>> cws = new HashSet<Set<Integer>>();
+		for(int u = 0; u < n; u++){
+			for(int v = 0; v < n; v++){
+				if(u == v || adjGraph.get(u).contains(v)){
 					continue;
 				}
-				for(Integer w : P5freeGraph.vertexSet()){
-					if(u.equals(w) || v.equals(w) || adjGraph.get(u).contains(w) || adjGraph.get(v).contains(w)){
+				for(int w = 0; w < n; w++){
+					if(u == w || v == w || adjGraph.get(u).contains(w) || adjGraph.get(v).contains(w)){
 						continue;
 					}
-					Set<Integer> NgAB = new HashSet<Integer>();
-					NgAB.add(u); NgAB.add(v);
-					NgAB.addAll(adjGraph.get(u)); NgAB.addAll(adjGraph.get(v));
-					
-					List<List<Integer>> cck = CCs(NgAB);
-					Set<Integer> Cw = connectedContainingU(w, NgAB);
-					
-					cws.add(Cw);
+					Set<Integer> NgUV = new HashSet<Integer>();
+					NgUV.add(u); NgUV.add(v);
+					NgUV.addAll(adjGraph.get(u)); NgUV.addAll(adjGraph.get(v));
+
+					//					List<List<Integer>> cck = CCs(NgUV);
+					Set<Integer> Cw = connectedContainingU(w, NgUV);
+
+					//					cws.add(Cw);
 					Set<Integer> NgCw = new HashSet<Integer>(Cw);
 
 					for(Integer k : Cw){
@@ -768,24 +772,12 @@ public class ISP5Free<V,E> {
 					}
 
 					Set<Integer> Chatu = connectedContainingU(u, NgCw);
-					
-					chatus.add(Chatu);
+
+					//					chatus.add(Chatu);
 					Set<Integer> openNgChatu = new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, Chatu));
-					//					new HashSet<Integer>();
-					//					for(Integer k : Chatu){
-					//						openNgChatu.addAll(adjGraph.get(k));
-					//					}
-					//					openNgChatu.removeAll(Chatu);
 
 					if(!openNgChatu.isEmpty()){
-						//						System.out.println(u + " " + v + " " + w + " " +openNgChatu);
 						delta2Set.add(openNgChatu);
-						//						System.out.print("u: " + u + " v: " + v + " w: " + w);
-						//						System.out.print(" ngAB: "  + NgAB);
-						//						System.out.print(" CW: " + Cw);
-						//						System.out.print(" NgCWmin: " + NgCWminCW);
-						//						System.out.print(" chatU: " + Chatu);
-						//						System.out.println(" openNg: " + openNgChatu);
 					}
 
 				}
@@ -868,7 +860,7 @@ public class ISP5Free<V,E> {
 				}
 			}
 		}
-		
+
 		for(int i = 0; i< Omegas.size(); i++){
 			for(Set<Integer> omegaI : Omegas.get(i)){
 				filteredOmegaNoDup.add(reconstructPMC(omegaI, i));
@@ -883,32 +875,31 @@ public class ISP5Free<V,E> {
 			omegaMinSep.add(minSep(filteredOmega.get(i)));
 		}
 
-//		System.out.println(delta);
+		//		System.out.println(delta);
 		delta = sort2DIntList(delta);
-
 		for(int i = 0; i< omegaMinSep.size(); i++){
 			omegaMinSep.set(i,sort2DIntList(omegaMinSep.get(i)));
 		}
 
-//		System.out.println("First: " + firstPI);
-//		DotGraph(P5freeGraph);
+		//		System.out.println("First: " + firstPI);
+		//		DotGraph(P5freeGraph);
 		//Create Trie from delta
 		Trie deltaTrie = new Trie(n);
-		List<List<Integer>> maxDeltaI = new ArrayList<List<Integer>>();
-		for(int i = 0; i< deltaI.get(n-1).size(); i++){
-			maxDeltaI.add(new ArrayList<Integer>(deltaI.get(n-1).get(i)));
-		}
-		deltaTrie.addSeqs(maxDeltaI);
-//		System.out.println(deltaTrie.DotGraph());
-//		System.out.println("Unfiltered " + filteredOmega);
+		//		List<List<Integer>> maxDeltaI = new ArrayList<List<Integer>>();
+		//		for(int i = 0; i< deltaI.get(n-1).size(); i++){
+		//			maxDeltaI.add(new ArrayList<Integer>(deltaI.get(n-1).get(i)));
+		//		}
+		deltaTrie.addSeqs(delta);
+		//		System.out.println(deltaTrie.DotGraph());
+		//		System.out.println("Unfiltered " + filteredOmega);
 		Set<Set<Integer>> finalOmegaList = new HashSet<Set<Integer>>();
 		for(int i = 0; i<omegaMinSep.size(); i++){
-//			System.out.println(omegaMinSep.get(i));
+			//			System.out.println(omegaMinSep.get(i));
 			if(deltaTrie.containsAll(omegaMinSep.get(i))){
 				finalOmegaList.add(new HashSet<Integer>(filteredOmega.get(i)));
 			}
 		}
-//		System.out.println("filtered: " + finalOmegaList);
+		//		System.out.println("filtered: " + finalOmegaList);
 		return finalOmegaList;
 	}
 
@@ -942,17 +933,17 @@ public class ISP5Free<V,E> {
 						Set<Integer> tmpSet = new HashSet<Integer>(Si);
 						Set<Integer> Nv = Neighbors.openNeighborhood(graphI.get(i), v);
 						Nv.retainAll(Ci);
-//						Set<Integer> Nv = new HashSet<Integer>(adjGraph.get(v));
-//						Set<Integer> NvRemove = new HashSet<Integer>();
-//						for(Integer v2 : Nv){
-//							if(v2 > i){
-//								NvRemove.add(v2);
-//								continue;
-//							}
-//							if(!Ci.contains(v2))
-//								NvRemove.add(v2);
-//						}
-//						Nv.removeAll(NvRemove);
+						//						Set<Integer> Nv = new HashSet<Integer>(adjGraph.get(v));
+						//						Set<Integer> NvRemove = new HashSet<Integer>();
+						//						for(Integer v2 : Nv){
+						//							if(v2 > i){
+						//								NvRemove.add(v2);
+						//								continue;
+						//							}
+						//							if(!Ci.contains(v2))
+						//								NvRemove.add(v2);
+						//						}
+						//						Nv.removeAll(NvRemove);
 						tmpSet.addAll(Nv);
 						piBI.get(i).add(tmpSet);
 					}
@@ -1106,8 +1097,8 @@ public class ISP5Free<V,E> {
 		for(int i = 0; i< cutoff; i++){
 			if(comp[i] != -1)
 				continue;
-//			Set<Integer> tmpComp = new HashSet<Integer>();
-//			tmpComp.add(i);
+			//			Set<Integer> tmpComp = new HashSet<Integer>();
+			//			tmpComp.add(i);
 			Queue<Integer> q = new LinkedList<Integer>();
 			q.add(i);
 			comp[i] = currComp;
@@ -1145,7 +1136,7 @@ public class ISP5Free<V,E> {
 			System.out.println("error, cutoff too large");
 			System.exit(0);
 		}
-			
+
 		List<List<Integer>> comps = new ArrayList<List<Integer>>();
 		int[] comp = new int[n];
 		for(int i = 0; i<n; i++){
@@ -1157,8 +1148,8 @@ public class ISP5Free<V,E> {
 		for(int i = 0; i<= cutoff; i++){
 			if(comp[i] != -1)
 				continue;
-//			Set<Integer> tmpComp = new HashSet<Integer>();
-//			tmpComp.add(i);
+			//			Set<Integer> tmpComp = new HashSet<Integer>();
+			//			tmpComp.add(i);
 			Queue<Integer> q = new LinkedList<Integer>();
 			q.add(i);
 			comp[i] = currComp;
@@ -1184,7 +1175,7 @@ public class ISP5Free<V,E> {
 		}
 		return comps;
 	}
-	
+
 	/**
 	 * Method to find the connected component containing
 	 * vertex with id u in the graph separated by avoid
@@ -1192,7 +1183,7 @@ public class ISP5Free<V,E> {
 	 * @param avoid set of vertices to separate graph
 	 * @return the connected component containing u
 	 */
-	public Set<Integer> connectedContainingU(Integer u, Collection<Integer> avoid){
+	public Set<Integer> connectedContainingUOLD(Integer u, Collection<Integer> avoid){
 		Map<Integer, Boolean> visited = new HashMap<Integer, Boolean>();
 		for(Integer v : P5freeGraph.vertexSet())
 			visited.put(v, false);
@@ -1216,7 +1207,37 @@ public class ISP5Free<V,E> {
 		return comp;
 	}
 
-
+	/**
+	 * Method to find the connected component containing
+	 * vertex with id u in the graph separated by avoid
+	 * @param u id of the vertex to find
+	 * @param avoid set of vertices to separate graph
+	 * @return the connected component containing u
+	 */
+	public Set<Integer> connectedContainingU(Integer u, Collection<Integer> avoid){
+		int[] visited = new int[n];
+		for(int i = 0; i<n; i++){
+			visited[i] = -1;
+			if(avoid.contains(i))
+				visited[i] = -2;
+		}
+		Set<Integer> comp = new HashSet<Integer>();
+		Queue<Integer> q = new LinkedList<Integer>();
+		q.add(u);
+		visited[u] = 1;
+		comp.add(u);
+		while(!q.isEmpty()){
+			Integer k = q.poll();
+			for(Integer v : adjGraph.get(k)){
+				if(visited[v] == -1){
+					visited[v] = 1;
+					q.add(v);
+					comp.add(v);
+				}
+			}
+		}
+		return comp;
+	}
 
 	public static List<Long> readLongGraphsFromFile(String filename){
 		List<Long> graphs = new ArrayList<Long>();
@@ -1561,17 +1582,17 @@ public class ISP5Free<V,E> {
 
 
 	public static void main(String[] args) {
-		
-//		TestGraph gr2 = GraphGenerator.star(23);
-//		ISP5Free<Integer, Integer> ispGR2 = new ISP5Free<Integer, Integer>(gr2);
-//		ispGR2.DotGraph(ispGR2.graphI.get(22));
-//		gr2.DotGraph();
-//		Set<Integer> kfe = new HashSet<Integer>();
-////		kfe.add(0);
-//		System.out.println(ispGR2.CCsEq(kfe, 23));
-		
-		
-		String filename = "21graphs.txt";
+
+		//		TestGraph gr2 = GraphGenerator.star(23);
+		//		ISP5Free<Integer, Integer> ispGR2 = new ISP5Free<Integer, Integer>(gr2);
+		//		ispGR2.DotGraph(ispGR2.graphI.get(22));
+		//		gr2.DotGraph();
+		//		Set<Integer> kfe = new HashSet<Integer>();
+		////		kfe.add(0);
+		//		System.out.println(ispGR2.CCsEq(kfe, 23));
+
+
+		String filename = "30Graphs.txt";
 		System.out.println("reading " +filename);
 		Set<BigInteger> grps = readNonDuplicateBigIntGraphsFromFile(filename);
 		List<TestGraph> grpsSimpUF = new ArrayList<TestGraph>();
@@ -1604,18 +1625,18 @@ public class ISP5Free<V,E> {
 
 		int maxPiIdx = 0;
 
-		for(int i = 5; i<6; i++){
+		for(int i = 0; i<grpsSimp.size(); i++){
 
-			if(i % 10 == 0)
+			if(i % 1 == 0)
 				System.out.println("At " + i);
 			TestGraph gr = grpsSimp.get(i);
-//						ExactVertexCover<Integer, Integer> exV = new ExactVertexCover<Integer, Integer>(gr);
-//						Collection<Integer> inDset = exV.execute();
-//						int iSetSize = gr.vertexSet().size()-inDset.size();
-//			
+			//									ExactVertexCover<Integer, Integer> exV = new ExactVertexCover<Integer, Integer>(gr);
+			//									Collection<Integer> inDset = exV.execute();
+			//									int iSetSize = gr.vertexSet().size()-inDset.size();
+
 			ISP5Free<Integer,Integer> ispGr = new ISP5Free<Integer,Integer>(gr);
-			//			int kfast = ispGr.maxISetFaster();
-//						int k = ispGr.maxISet();
+			int kfast = ispGr.maxISetFaster();
+			int k = ispGr.maxISet();
 
 			totPi += ispGr.comboPI.size();
 			if(ispGr.comboPI.size() > maxPi){
@@ -1642,10 +1663,12 @@ public class ISP5Free<V,E> {
 			totDiff += pi2.size();
 			if(pi2.size() > maxDiff)
 				maxDiff = pi2.size();
-//						if( iSetSize != k){
-//							gr.DotGraph();
-//							return;
-//						}
+			//									
+			//										System.out.println(k + " " + kfast);
+			//										if( kfast != k){
+			//										gr.DotGraph();
+			//										return;
+			//									}
 		}
 
 		System.out.println("TotPi: " + totPi + " maxPi: " + maxPi );
