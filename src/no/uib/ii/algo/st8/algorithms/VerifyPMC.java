@@ -125,7 +125,7 @@ public class VerifyPMC {
 	 * @param V Separator
 	 * @return True if graph becomes complete, false otherwise
 	 */
-	public static boolean completeGraphN2C(ArrayList<ArrayList<Integer>> inG, ArrayList<Integer> V){
+	public static boolean completeGraphNM(ArrayList<ArrayList<Integer>> inG, ArrayList<Integer> V){
 		ArrayList<HashSet<Integer>> hashG = new ArrayList<HashSet<Integer>>();
 		for(int i = 0; i<inG.size(); i++){
 			hashG.add(new HashSet<Integer>(inG.get(i)));
@@ -171,12 +171,12 @@ public class VerifyPMC {
 	 * @param V Separator
 	 * @return True if graph becomes complete, false otherwise
 	 */
-	public static boolean completeGraphNM(ArrayList<ArrayList<Integer>> inG, ArrayList<Integer> V){
+	public static boolean completeGraphN2C(ArrayList<ArrayList<Integer>> inG, ArrayList<Integer> V){
 		ArrayList<ArrayList<Integer>> G = new ArrayList<ArrayList<Integer>>(inG.size());
 		for(int i = 0; i<inG.size(); i++){
 			G.add(new ArrayList<Integer>(inG.get(i)));
 		}
-		System.out.println(G.size() + " " + V.size());
+//		System.out.println(G.size() + " " + V.size());
 		Integer[][] Vmat = new Integer[G.size()+10][G.size()+1];
 		for(int i = 0; i<G.size(); i++){
 			for(int j = 0; j<G.size(); j++){

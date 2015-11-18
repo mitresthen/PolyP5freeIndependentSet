@@ -632,16 +632,16 @@ public class GraphGenerator {
 	}
 	public static void main(String[] args){
 		Set<BigInteger> grps = new HashSet<BigInteger>();
-		int k = 12;
-		while(grps.size() < 10000){
-			TestGraph g = GraphGenerator.random(k, 0.5f);
+		int k = 10;
+		while(grps.size() < 1000){
+			TestGraph g = GraphGenerator.random(k, 0.2f);
 //			g.DotGraph();
 			if(!containsP5(g) && listComponents(g,g.vertexSet()).size() == 1){
 				System.out.println(grps.size());
 				grps.add(graphToBigInt(g));
 			}
 		}
-		writeBigIntGraphsToFile(grps, "uniform12Graphs.txt");
+		writeBigIntGraphsToFile(grps, "uniform10Graphs22.txt");
 	}
 
 }

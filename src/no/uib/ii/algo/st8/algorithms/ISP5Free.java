@@ -100,14 +100,14 @@ public class ISP5Free<V,E> {
 	 */
 	public ISP5Free(SimpleGraph<V,E> inG){
 		G = (SimpleGraph<V, E>) inG.clone();
-		//		while(lowestDegreeV(G) != null && G.degreeOf(lowestDegreeV(G)) < 2){
-		//			V v = lowestDegreeV(G);
-		//			for(V u : Neighbors.openNeighborhood(G, v)){
-		//				G.removeVertex(u);
-		//			}
-		//			G.removeVertex(v);
-		//			dg0and1count++;
-		//		}
+		//				while(lowestDegreeV(G) != null && G.degreeOf(lowestDegreeV(G)) < 2){
+		//					V v = lowestDegreeV(G);
+		//					for(V u : Neighbors.openNeighborhood(G, v)){
+		//						G.removeVertex(u);
+		//					}
+		//					G.removeVertex(v);
+		//					dg0and1count++;
+		//				}
 		//Convert the graph from SimpleGraph<V,E> to SimpleGraph<Int, Int> as the type information
 		//Is not important to the algorithm, and this provides much faster lookups and other neat functionality.
 		//vOrd associates the vertices with integers that represent them
@@ -746,8 +746,8 @@ public class ISP5Free<V,E> {
 		if(G.vertexSet().isEmpty())
 			return delta2;
 		Set<Set<Integer>> delta2Set = new HashSet<Set<Integer>>();
-		//		Set<Set<Integer>> chatus = new HashSet<Set<Integer>>();
-		//		Set<Set<Integer>> cws = new HashSet<Set<Integer>>();
+		Set<Set<Integer>> chatus = new HashSet<Set<Integer>>();
+		Set<Set<Integer>> cws = new HashSet<Set<Integer>>();
 		for(int u = 0; u < n; u++){
 			for(int v = 0; v < n; v++){
 				if(u == v || adjGraph.get(u).contains(v)){
@@ -761,10 +761,10 @@ public class ISP5Free<V,E> {
 					NgUV.add(u); NgUV.add(v);
 					NgUV.addAll(adjGraph.get(u)); NgUV.addAll(adjGraph.get(v));
 
-					//					List<List<Integer>> cck = CCs(NgUV);
+//										List<List<Integer>> cck = CCs(NgUV);
 					Set<Integer> Cw = connectedContainingU(w, NgUV);
 
-					//					cws.add(Cw);
+										cws.add(Cw);
 					Set<Integer> NgCw = new HashSet<Integer>(Cw);
 
 					for(Integer k : Cw){
@@ -773,9 +773,12 @@ public class ISP5Free<V,E> {
 
 					Set<Integer> Chatu = connectedContainingU(u, NgCw);
 
-					//					chatus.add(Chatu);
+										chatus.add(Chatu);
 					Set<Integer> openNgChatu = new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, Chatu));
 
+					if(NgCw.equals(openNgChatu)){
+						System.out.println("Equal");
+					}
 					if(!openNgChatu.isEmpty()){
 						delta2Set.add(openNgChatu);
 					}
@@ -788,7 +791,7 @@ public class ISP5Free<V,E> {
 			delta2.add(new ArrayList<Integer>(dlt2));
 		}
 		//System.out.println(delta2.size());
-		//	System.out.println("chatus : " + chatus.size() + " deltas: " + delta2.size() + " cws: " + cws.size());
+//			System.out.println("chatus : " + chatus.size() + " deltas: " + delta2.size() + " cws: " + cws.size());
 		return delta2;
 	}
 
@@ -798,7 +801,7 @@ public class ISP5Free<V,E> {
 	 * Method to generate the list Pi2
 	 * @return
 	 */
-	private Set<Set<Integer>> Pi2(){
+	public Set<Set<Integer>> Pi2(){
 		List<List<Set<Integer>>> deltaI = new ArrayList<List<Set<Integer>>>();
 		List<Set<Set<Integer>>> Omegas = new ArrayList<Set<Set<Integer>>>();
 		List<Set<Integer>> filteredOmega = new ArrayList<Set<Integer>>();
@@ -1580,19 +1583,28 @@ public class ISP5Free<V,E> {
 		}
 	}
 
+	public int countUniqueuvComps(){
+		Set<Set<Integer>> comps = new HashSet<Set<Integer>>();
+		for(int i : P5freeGraph.vertexSet()){
+			for(int j : P5freeGraph.vertexSet()){
+				if(i == j)
+					continue;
+				Set<Integer> verts = new HashSet<Integer>();
+				verts.add(i); verts.add(j);
+				List<List<Integer>> cc = (CCs(new HashSet<Integer>(Neighbors.closedNeighborhood(P5freeGraph, verts))));
+				for(List<Integer> c : cc){
+					comps.add(new HashSet<Integer>(c));
+				}
+			}
+		}
+		return comps.size();
+	}
+
 
 	public static void main(String[] args) {
 
-		//		TestGraph gr2 = GraphGenerator.star(23);
-		//		ISP5Free<Integer, Integer> ispGR2 = new ISP5Free<Integer, Integer>(gr2);
-		//		ispGR2.DotGraph(ispGR2.graphI.get(22));
-		//		gr2.DotGraph();
-		//		Set<Integer> kfe = new HashSet<Integer>();
-		////		kfe.add(0);
-		//		System.out.println(ispGR2.CCsEq(kfe, 23));
 
-
-		String filename = "30Graphs.txt";
+		String filename = "30graphs2.txt";
 		System.out.println("reading " +filename);
 		Set<BigInteger> grps = readNonDuplicateBigIntGraphsFromFile(filename);
 		List<TestGraph> grpsSimpUF = new ArrayList<TestGraph>();
@@ -1606,7 +1618,10 @@ public class ISP5Free<V,E> {
 		}
 
 		System.out.println("Number of graphs: " + grpsSimp.size());
-		long startTime = System.nanoTime();
+		long totFast = 0;
+		long totSlow = 0;
+		long maxFast = 0;
+		long maxSlow = 0;
 
 		int totPi1 = 0;
 		int maxPi1 = 0;
@@ -1625,26 +1640,58 @@ public class ISP5Free<V,E> {
 
 		int maxPiIdx = 0;
 
+		long maxExpo = 0;
+		long totExpo = 0;
 		for(int i = 0; i<grpsSimp.size(); i++){
-
-			if(i % 1 == 0)
+			//
+			if(i % (grpsSimp.size()/100) == 0)
 				System.out.println("At " + i);
 			TestGraph gr = grpsSimp.get(i);
-			//									ExactVertexCover<Integer, Integer> exV = new ExactVertexCover<Integer, Integer>(gr);
-			//									Collection<Integer> inDset = exV.execute();
-			//									int iSetSize = gr.vertexSet().size()-inDset.size();
 
+			long beforeExpo = System.nanoTime();
+
+			//				long startSetup = System.nanoTime();
 			ISP5Free<Integer,Integer> ispGr = new ISP5Free<Integer,Integer>(gr);
-			int kfast = ispGr.maxISetFaster();
-			int k = ispGr.maxISet();
+			long Setup = 0; //System.nanoTime()-startSetup;
 
-			totPi += ispGr.comboPI.size();
-			if(ispGr.comboPI.size() > maxPi){
-				maxPiIdx = i;
-				maxPi = ispGr.comboPI.size();
+			//				ExactVertexCover<Integer, Integer> exV = new ExactVertexCover<Integer, Integer>(gr);
+			//				Collection<Integer> inDset = exV.execute();
+
+			//				int iSetSize = gr.vertexSet().size()-inDset.size();
+			//				ispGr.smallDelta2();
+			long afterExpo = System.nanoTime()- beforeExpo;
+			totExpo += afterExpo;
+			if(afterExpo > maxExpo){
+				maxExpo = afterExpo;
+			}
+
+			long beforeFast = System.nanoTime();
+			int kfast = ispGr.maxISetFaster();
+			//				ispGr.Pi1();
+			long diffFast = Setup + ( System.nanoTime()- beforeFast);
+			totFast += diffFast;
+			if(diffFast > maxFast){
+									maxPiIdx = i;
+				maxFast = diffFast;
+			}
+			//
+			long beforeSlow = System.nanoTime();
+			//				ispGr.Pi2();
+			int k = ispGr.maxISet();
+			long diffSlow = Setup + (System.nanoTime() -beforeSlow);
+			totSlow += diffSlow;
+			if(diffSlow > maxSlow)
+				maxSlow = diffSlow;
+
+			int compCount = ispGr.countUniqueuvComps();
+			totPi += compCount; //ispGr.countUniqueuvComps(); //ispGr.comboPI.size();
+			if(compCount > maxPi){
+//				maxPiIdx = i;
+				maxPi = compCount;// ispGr.comboPI.size();
 			}
 
 			List<List<Integer>> dlt = ispGr.smallDelta2();
+			//				System.out.println(dlt);
 			totDlt2 += dlt.size();
 			if(dlt.size() > maxDlt2){
 				maxDlt2 = dlt.size();
@@ -1665,12 +1712,14 @@ public class ISP5Free<V,E> {
 				maxDiff = pi2.size();
 			//									
 			//										System.out.println(k + " " + kfast);
-			//										if( kfast != k){
-			//										gr.DotGraph();
-			//										return;
-			//									}
+			//				if( k != iSetSize  ){
+			//					System.out.println("fail at: " + i);
+			//					gr.DotGraph();
+			//					return;
+			//				}
 		}
 
+		grpsSimp.get(maxPiIdx).DotGraph();
 		System.out.println("TotPi: " + totPi + " maxPi: " + maxPi );
 		System.out.println("TotPi1: " + totPi1 + " maxPi1: " + maxPi1 );
 		System.out.println("TotPi2: " + totPi2 + " maxPi2: " + maxPi2 );
@@ -1678,12 +1727,14 @@ public class ISP5Free<V,E> {
 		System.out.println("TotDlt2: " + totDlt2 + " maxDlt2: " + maxDlt2 );
 		System.out.println("MaxPiIdx: " + maxPiIdx);
 
-		long stopTime = System.nanoTime();
-		long elapsedTime = stopTime - startTime;
-		System.out.println(elapsedTime);
+		System.out.println("Total fast: " + totFast + " Max fast: " + maxFast);
+		System.out.println("Total slow: " + totSlow + " Max slow: " + maxSlow);
+		System.out.println("Total expo: " + totExpo + " Max expo: " + maxExpo);
 
+		//			System.out.println(grpsSimp.get(35).vertexSet().size() + " " + grpsSimp.get(35).edgeSet().size());
 
 	}
+
 }
 
 
