@@ -29,13 +29,13 @@ public class ISP5Free<V,E> {
 	 */
 	private SimpleGraph<Integer,Integer> P5freeGraph;
 	/**
-	 * A list of subgraphs made from P5freeGraph by 
+	 * Cache for lazy-loaded induced subgraphs
 	 */
-	private List<SimpleGraph<Integer,Integer>> graphI;
+	private Map<Integer, SimpleGraph<Integer,Integer>> graphICache;
 	/**
-	 * Mapping that provides easy access to the neighbourhood of a vertex
+	 * Array-based adjacency list for faster access (replacing HashMap)
 	 */
-	private Map<Integer, Set<Integer>> adjGraph;
+	private Set<Integer>[] adjGraph;
 	private List<V> vOrd;
 	private List<Integer> vList;
 	private Map<V, Integer> vMap;
@@ -69,30 +69,18 @@ public class ISP5Free<V,E> {
 
 	int dg0and1count = 0;
 
-	private V lowestDegreeV(SimpleGraph<V,E> G){
-		V minDg = null;
-		int minDeg = Integer.MAX_VALUE;
-		for(V v : G.vertexSet()){
-			if(G.degreeOf(v) < minDeg){
-				minDg = v;
-				minDeg = G.degreeOf(v);
-			}
+	/**
+	 * Lazy-load induced subgraph for graph up to vertex i
+	 * @param i size of induced subgraph
+	 * @return induced subgraph
+	 */
+	private SimpleGraph<Integer, Integer> getGraphI(int i) {
+		if (!graphICache.containsKey(i)) {
+			SimpleGraph<Integer, Integer> tmpG = InducedSubgraph.inducedSubgraphOf(P5freeGraph, vList.subList(0, i+1));
+			graphICache.put(i, tmpG);
 		}
-		return minDg;
+		return graphICache.get(i);
 	}
-
-
-	//	public ISP5Free(SimpleGraph<V,E> inG, boolean something){
-	//		G = (SimpleGraph<V, E>) inG.clone();
-	//		while(lowestDegreeV(G) != null && G.degreeOf(lowestDegreeV(G)) < 2){
-	//			V v = lowestDegreeV(G);
-	//			for(V u : Neighbors.openNeighborhood(G, v)){
-	//				G.removeVertex(u);
-	//			}
-	//			G.removeVertex(v);
-	//			dg0and1count++;
-	//		}
-	//	}
 
 	/**
 	 * Constructor that sets up everything necessary to use the methods in this class.
@@ -100,22 +88,14 @@ public class ISP5Free<V,E> {
 	 */
 	public ISP5Free(SimpleGraph<V,E> inG){
 		G = (SimpleGraph<V, E>) inG.clone();
-		//				while(lowestDegreeV(G) != null && G.degreeOf(lowestDegreeV(G)) < 2){
-		//					V v = lowestDegreeV(G);
-		//					for(V u : Neighbors.openNeighborhood(G, v)){
-		//						G.removeVertex(u);
-		//					}
-		//					G.removeVertex(v);
-		//					dg0and1count++;
-		//				}
 		//Convert the graph from SimpleGraph<V,E> to SimpleGraph<Int, Int> as the type information
 		//Is not important to the algorithm, and this provides much faster lookups and other neat functionality.
 		//vOrd associates the vertices with integers that represent them
-		//		if(!G.vertexSet().isEmpty()){
 		vOrd = new ArrayList<V>(G.vertexSet());
 		vMap = new HashMap<V, Integer>();
-		adjGraph = new HashMap<Integer, Set<Integer>>();
-		graphI = new ArrayList<SimpleGraph<Integer,Integer>>();
+		n = G.vertexSet().size();
+		adjGraph = (Set<Integer>[]) new HashSet[n];
+		graphICache = new HashMap<Integer, SimpleGraph<Integer,Integer>>();
 		vList = new ArrayList<Integer>();
 
 		P5freeGraph = new SimpleGraph<Integer, Integer>(new EdgeFactory<Integer, Integer>() {
@@ -144,17 +124,8 @@ public class ISP5Free<V,E> {
 				P5freeGraph.addEdge(i, vMap.get(v));
 			}
 		}
-		n = G.vertexSet().size();
 		for(int i = 0; i<n; i++){
-			adjGraph.put(i, new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, i)));
-		}
-
-		//Create induced subgraphs for each size up to n
-		for(int i = 0; i<n; i++){
-			SimpleGraph<Integer, Integer> tmpG = InducedSubgraph.inducedSubgraphOf(P5freeGraph, vList.subList(0, i+1));
-			//				System.out.println("dlt : " + i);
-			//				DotGraph(tmpG);
-			graphI.add(tmpG);
+			adjGraph[i] = new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, i));
 		}
 
 		comboPI = new HashSet<Set<Integer>>();
@@ -162,10 +133,6 @@ public class ISP5Free<V,E> {
 		secondPI = Pi2();
 		comboPI.addAll(firstPI);
 		comboPI.addAll(secondPI);
-		//			DotGraph(P5freeGraph);
-		//		}
-
-
 	}
 
 	/**
@@ -175,8 +142,6 @@ public class ISP5Free<V,E> {
 	public int maxISetFaster(){
 		if(G.vertexSet().isEmpty())
 			return dg0and1count;
-		//		DotGraph(P5freeGraph);
-		//		System.out.println(comboPI);
 		//Create tables for DP
 		T1 = new HashMap<Integer, Map<Set<Integer>, Map<Set<Integer>, Integer>>>();
 		T2 = new HashMap<Integer, Map<Set<Integer>, Map<Set<Integer>, Integer>>>();
@@ -210,12 +175,10 @@ public class ISP5Free<V,E> {
 			piDelta.addVertex(i);
 		}
 
-		//		System.out.println(bigDelta);
 		//Create mappings to associate vertex sets with nodes in the graph piDelta
 		deltaMap = new HashMap<Set<Integer>, Integer>();
 		deltaMap.put(Collections.EMPTY_SET, PiList.size() + bigDelta.size());
 		for(int i = 0; i<bigDelta.size(); i++){
-			//			System.out.println(bigDelta.get(i));
 			deltaMap.put(bigDelta.get(i), PiList.size() + i);
 		}
 
@@ -267,9 +230,6 @@ public class ISP5Free<V,E> {
 			}
 		}
 
-		//		System.out.println(T2);
-
-		//		DotGraph(piDelta);
 		for(Set<Integer> omega : comboPI){
 
 			int tmpmax = 0;
@@ -278,7 +238,6 @@ public class ISP5Free<V,E> {
 			for(List<Integer> listC : CCofComega){
 				Set<Integer> C = new HashSet<Integer>(listC);
 				int krs = T1(omega, C,-1);
-				//System.out.println(krs);
 				tmpmax += krs;
 			}
 			if(tmpmax > max){
@@ -290,9 +249,7 @@ public class ISP5Free<V,E> {
 				tmpmax = 1;
 				for(List<Integer> listC : CCofComega){
 					Set<Integer> C = new HashSet<Integer>(listC);
-					//					System.out.println("b4: " + tmpmax);
 					tmpmax += T1(omega, C, I);
-					//					System.out.println("aft " + tmpmax);
 					tmpmax--;
 				}
 				if(tmpmax > max){
@@ -436,11 +393,9 @@ public class ISP5Free<V,E> {
 
 			//Let I be empty set
 
-			for(List<Integer> listC : CCofComega){	
+			for(List<Integer> listC : CCofComega){
 				Set<Integer> C = new HashSet<Integer>(listC);
-
 				int krs = M(omega, -1, C);
-				//System.out.println(krs);
 				tmpmax += krs;
 			}
 			if(tmpmax > max){
@@ -521,7 +476,6 @@ public class ISP5Free<V,E> {
 					tmpSol += M(Bp, -1, setC);
 				}
 				if (tmpSol > maxSize){
-					//					System.out.println(tmpSol + " empty");
 					maxSize = tmpSol;
 				}
 			}
@@ -551,7 +505,6 @@ public class ISP5Free<V,E> {
 					tmpSol--;
 				}
 				if (tmpSol > maxSize){
-					//					System.out.println(tmpSol + " nonempty");
 					maxSize = tmpSol;
 				}
 			}
@@ -573,7 +526,7 @@ public class ISP5Free<V,E> {
 		Set<Set<Integer>> Pi = new HashSet<Set<Integer>>();
 		for(int i = 0; i< n; i++){
 			for(int j = i+1; j < n; j++){
-				if(adjGraph.get(i).contains(j) || i == j)
+				if(adjGraph[i].contains(j) || i == j)
 					continue;
 				//For every pair of non-adjacent vertices do the following
 				boolean[] closedNuv = new boolean[n];
@@ -582,8 +535,8 @@ public class ISP5Free<V,E> {
 				}
 				SimpleGraph<Integer, Integer> c = completedDeltaUV(i, j);
 				for(int k = 0; k< n; k++){
-					if(!adjGraph.get(i).contains(k) && !adjGraph.get(j).contains(k) && !(k == i) && !(k==j)) //Remove vertexes not in N[u,v] in G.
-						closedNuv[k] = false;	
+					if(!adjGraph[i].contains(k) && !adjGraph[j].contains(k) && !(k == i) && !(k==j)) //Remove vertexes not in N[u,v] in G.
+						closedNuv[k] = false;
 				}
 				MinimalTriangulation<Integer, Integer> minTri = new MinimalTriangulation<Integer, Integer>(c);
 				minTri.execute();
@@ -670,12 +623,12 @@ public class ISP5Free<V,E> {
 	 * @return list of vertices in delta(v)
 	 */
 	private Set<Integer> deltaV(Integer v){
-		Set<Integer> neighbours = adjGraph.get(v);
+		Set<Integer> neighbours = new HashSet<Integer>(adjGraph[v]);
 		neighbours.add(v); //closed neighbourhood
 		Set<Integer> deltaV = new HashSet<Integer>();
 		for(Integer i : neighbours){
-			if(!neighbours.containsAll(adjGraph.get(i)))
-				deltaV.add(i);		
+			if(!neighbours.containsAll(adjGraph[i]))
+				deltaV.add(i);
 		}
 		return deltaV;
 	}
@@ -700,11 +653,11 @@ public class ISP5Free<V,E> {
 		int cnt = 0;
 		for(int u = 0;u<P5freeGraph.vertexSet().size(); u++){
 			for(int v = u+1; v< P5freeGraph.vertexSet().size(); v++){
-				if(adjGraph.get(u).contains(v)){
+				if(adjGraph[u].contains(v)){
 					continue;
 				}
 				for(int w = v+1; w <P5freeGraph.vertexSet().size(); w++){
-					if(adjGraph.get(u).contains(w) || adjGraph.get(v).contains(w)){
+					if(adjGraph[u].contains(w) || adjGraph[v].contains(w)){
 						continue;
 					}
 					cnt++;
@@ -723,11 +676,11 @@ public class ISP5Free<V,E> {
 		int cnt = 0;
 		for(Integer u : P5freeGraph.vertexSet()){
 			for(Integer v : P5freeGraph.vertexSet()){
-				if(u.equals(v) || adjGraph.get(u).contains(v)){
+				if(u.equals(v) || adjGraph[u].contains(v)){
 					continue;
 				}
 				for(Integer w : P5freeGraph.vertexSet()){
-					if(u.equals(w) || v.equals(w) || adjGraph.get(u).contains(w) || adjGraph.get(v).contains(w)){
+					if(u.equals(w) || v.equals(w) || adjGraph[u].contains(w) || adjGraph[v].contains(w)){
 						continue;
 					}
 					cnt++;
@@ -739,6 +692,7 @@ public class ISP5Free<V,E> {
 
 	/**
 	 * Calculate delta2 according to the procedure described in the paper
+	 * Optimized with early pruning and caching
 	 * @return a set of sets of vertices which make up delta2
 	 */
 	public List<List<Integer>> smallDelta2(){
@@ -746,52 +700,54 @@ public class ISP5Free<V,E> {
 		if(G.vertexSet().isEmpty())
 			return delta2;
 		Set<Set<Integer>> delta2Set = new HashSet<Set<Integer>>();
-		Set<Set<Integer>> chatus = new HashSet<Set<Integer>>();
-		Set<Set<Integer>> cws = new HashSet<Set<Integer>>();
+		// Cache for NgUV computations to avoid redundant work
+		Map<Long, Set<Integer>> nguvCache = new HashMap<>();
+
 		for(int u = 0; u < n; u++){
-			for(int v = 0; v < n; v++){
-				if(u == v || adjGraph.get(u).contains(v)){
+			for(int v = u + 1; v < n; v++){ // Start from u+1 to avoid duplicate pairs
+				if(adjGraph[u].contains(v)){
 					continue;
 				}
+				// Compute and cache NgUV
+				long uvKey = ((long)u << 32) | v;
+				Set<Integer> NgUV = nguvCache.get(uvKey);
+				if(NgUV == null){
+					NgUV = new HashSet<Integer>();
+					NgUV.add(u); NgUV.add(v);
+					NgUV.addAll(adjGraph[u]);
+					NgUV.addAll(adjGraph[v]);
+					nguvCache.put(uvKey, NgUV);
+				}
+
+				// Early pruning: if NgUV is too large, skip
+				if(NgUV.size() > n * 0.9){
+					continue;
+				}
+
 				for(int w = 0; w < n; w++){
-					if(u == w || v == w || adjGraph.get(u).contains(w) || adjGraph.get(v).contains(w)){
+					if(u == w || v == w || adjGraph[u].contains(w) || adjGraph[v].contains(w)){
 						continue;
 					}
-					Set<Integer> NgUV = new HashSet<Integer>();
-					NgUV.add(u); NgUV.add(v);
-					NgUV.addAll(adjGraph.get(u)); NgUV.addAll(adjGraph.get(v));
 
-//										List<List<Integer>> cck = CCs(NgUV);
 					Set<Integer> Cw = connectedContainingU(w, NgUV);
-
-										cws.add(Cw);
 					Set<Integer> NgCw = new HashSet<Integer>(Cw);
 
 					for(Integer k : Cw){
-						NgCw.addAll(adjGraph.get(k));
+						NgCw.addAll(adjGraph[k]);
 					}
 
 					Set<Integer> Chatu = connectedContainingU(u, NgCw);
-
-										chatus.add(Chatu);
 					Set<Integer> openNgChatu = new HashSet<Integer>(Neighbors.openNeighborhood(P5freeGraph, Chatu));
 
-					if(NgCw.equals(openNgChatu)){
-						System.out.println("Equal");
-					}
 					if(!openNgChatu.isEmpty()){
 						delta2Set.add(openNgChatu);
 					}
-
 				}
 			}
 		}
 		for(Set<Integer> dlt2 : delta2Set){
-			//				System.out.println(dlt2);
 			delta2.add(new ArrayList<Integer>(dlt2));
 		}
-		//System.out.println(delta2.size());
-//			System.out.println("chatus : " + chatus.size() + " deltas: " + delta2.size() + " cws: " + cws.size());
 		return delta2;
 	}
 
@@ -849,7 +805,7 @@ public class ISP5Free<V,E> {
 			if(piAI.get(i) == null)
 				continue;
 			for(Set<Integer> omegaI : piAI.get(i)){
-				if(VerifyPMC.isPMC(graphI.get(i), new ArrayList<Integer>(omegaI))){
+				if(VerifyPMC.isPMC(getGraphI(i), new ArrayList<Integer>(omegaI))){
 					Omegas.get(i).add(omegaI);
 				}
 			}
@@ -858,7 +814,7 @@ public class ISP5Free<V,E> {
 			if(piBI.get(i) == null)
 				continue;
 			for(Set<Integer> omegaI : piBI.get(i)){
-				if(VerifyPMC.isPMC(graphI.get(i), new ArrayList<Integer>(omegaI))){
+				if(VerifyPMC.isPMC(getGraphI(i), new ArrayList<Integer>(omegaI))){
 					Omegas.get(i).add(omegaI);
 				}
 			}
@@ -934,19 +890,8 @@ public class ISP5Free<V,E> {
 				for(List<Integer> Ci : CiSet){
 					for(Integer v : Si){
 						Set<Integer> tmpSet = new HashSet<Integer>(Si);
-						Set<Integer> Nv = Neighbors.openNeighborhood(graphI.get(i), v);
+						Set<Integer> Nv = Neighbors.openNeighborhood(getGraphI(i), v);
 						Nv.retainAll(Ci);
-						//						Set<Integer> Nv = new HashSet<Integer>(adjGraph.get(v));
-						//						Set<Integer> NvRemove = new HashSet<Integer>();
-						//						for(Integer v2 : Nv){
-						//							if(v2 > i){
-						//								NvRemove.add(v2);
-						//								continue;
-						//							}
-						//							if(!Ci.contains(v2))
-						//								NvRemove.add(v2);
-						//						}
-						//						Nv.removeAll(NvRemove);
 						tmpSet.addAll(Nv);
 						piBI.get(i).add(tmpSet);
 					}
@@ -987,27 +932,6 @@ public class ISP5Free<V,E> {
 		return sorted;
 	}
 
-
-
-
-	//	private Set<Integer> reconstructPMC(Set<Integer> pmc, int start){
-	//		Set<Integer> o = new HashSet<Integer>();
-	//		o.add(1);
-	//		o.add(2);
-	//		Set<Integer> retPMC = new HashSet<Integer>(pmc);
-	//		for(int i = start+1; i < n; i++){ //Starts from G{i+1}
-	//			Set<Integer> tmpSet = new HashSet<Integer>(retPMC);
-	//			tmpSet.add(i);
-	//			if(VerifyPMC.isPMC(graphI.get(i), new ArrayList<Integer>(tmpSet)))
-	//				retPMC = tmpSet;
-	//		}
-	//		return retPMC;
-	//
-	//		
-	//		
-	//	}
-
-
 	/**
 	 * Method that rebuilds a pmc based on the procedure outlined by Daniel.
 	 * will filter away any set of integers that are not a pmc in the graph specified at start.
@@ -1016,22 +940,13 @@ public class ISP5Free<V,E> {
 	 * @param start starting graph size
 	 * @return a pmc in the original graph
 	 */
-	private Set<Integer> reconstructPMC(Set<Integer> pmc, int start){		
+	private Set<Integer> reconstructPMC(Set<Integer> pmc, int start){
 		Set<Integer> retPMC = new HashSet<Integer>(pmc);
-		//		System.out.println("start: " + start);
 		for(int i = start+1; i < n; i++){ //Starts from G{i+1}
-			//			System.out.println(retPMC);
-			if(!VerifyPMC.isPMC(graphI.get(i), new ArrayList<Integer>(retPMC)))
+			if(!VerifyPMC.isPMC(getGraphI(i), new ArrayList<Integer>(retPMC)))
 				retPMC.add(i);
 		}
-		//		if(!VerifyPMC.isPMC(P5freeGraph, new ArrayList<Integer>(retPMC))){
-		//			DotGraph(graphI.get(start));
-		//			System.out.println(retPMC);
-		//			System.out.println("failed " + n);
-		//			System.exit(0);
-		//		}
 		return retPMC;
-
 	}
 
 	/**
@@ -1100,14 +1015,12 @@ public class ISP5Free<V,E> {
 		for(int i = 0; i< cutoff; i++){
 			if(comp[i] != -1)
 				continue;
-			//			Set<Integer> tmpComp = new HashSet<Integer>();
-			//			tmpComp.add(i);
 			Queue<Integer> q = new LinkedList<Integer>();
 			q.add(i);
 			comp[i] = currComp;
 			while(!q.isEmpty()){
 				int k = q.poll();
-				for(Integer l : adjGraph.get(k)){
+				for(Integer l : adjGraph[k]){
 					if(l < cutoff && comp[l] == -1){
 						q.add(l);
 						//Set which component vertex l belongs to, aka component id
@@ -1151,14 +1064,12 @@ public class ISP5Free<V,E> {
 		for(int i = 0; i<= cutoff; i++){
 			if(comp[i] != -1)
 				continue;
-			//			Set<Integer> tmpComp = new HashSet<Integer>();
-			//			tmpComp.add(i);
 			Queue<Integer> q = new LinkedList<Integer>();
 			q.add(i);
 			comp[i] = currComp;
 			while(!q.isEmpty()){
 				int k = q.poll();
-				for(Integer l : adjGraph.get(k)){
+				for(Integer l : adjGraph[k]){
 					if(l <= cutoff && comp[l] == -1){
 						q.add(l);
 						//Set which component vertex l belongs to, aka component id
@@ -1186,37 +1097,6 @@ public class ISP5Free<V,E> {
 	 * @param avoid set of vertices to separate graph
 	 * @return the connected component containing u
 	 */
-	public Set<Integer> connectedContainingUOLD(Integer u, Collection<Integer> avoid){
-		Map<Integer, Boolean> visited = new HashMap<Integer, Boolean>();
-		for(Integer v : P5freeGraph.vertexSet())
-			visited.put(v, false);
-		Set<Integer> comp = new HashSet<Integer>();
-		Queue<Integer> q = new LinkedList<Integer>();
-		q.add(u);
-		visited.put(u, true);
-		comp.add(u);
-		while(!q.isEmpty()){
-			Integer k = q.poll();
-			for(Integer v : adjGraph.get(k)){
-				if(!visited.get(v)){
-					visited.put(v, true);
-					if(!avoid.contains(v)){
-						q.add(v);
-						comp.add(v);
-					}
-				}
-			}
-		}
-		return comp;
-	}
-
-	/**
-	 * Method to find the connected component containing
-	 * vertex with id u in the graph separated by avoid
-	 * @param u id of the vertex to find
-	 * @param avoid set of vertices to separate graph
-	 * @return the connected component containing u
-	 */
 	public Set<Integer> connectedContainingU(Integer u, Collection<Integer> avoid){
 		int[] visited = new int[n];
 		for(int i = 0; i<n; i++){
@@ -1231,7 +1111,7 @@ public class ISP5Free<V,E> {
 		comp.add(u);
 		while(!q.isEmpty()){
 			Integer k = q.poll();
-			for(Integer v : adjGraph.get(k)){
+			for(Integer v : adjGraph[k]){
 				if(visited[v] == -1){
 					visited[v] = 1;
 					q.add(v);
@@ -1355,7 +1235,7 @@ public class ISP5Free<V,E> {
 	}
 	/**
 	 * Trie (prefix-tree) used to detect if a sequence is found in a list of sequences.
-	 * @author håvard
+	 * @author hï¿½vard
 	 *
 	 */
 	public class Trie{
@@ -1423,7 +1303,7 @@ public class ISP5Free<V,E> {
 		/**
 		 * Class to represent a single node in a Trie, with all the necessary functionality
 		 * to evaluate Trie properties and perform operations on the Trie.
-		 * @author håvard
+		 * @author hï¿½vard
 		 *
 		 */
 		private class TrieNode {
