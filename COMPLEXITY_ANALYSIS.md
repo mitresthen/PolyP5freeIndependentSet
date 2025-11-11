@@ -1,11 +1,27 @@
 # Big O Complexity Analysis: P5-Free Independent Set Algorithms
 
 ## Table of Contents
-1. [ISP5Free Main Algorithms](#isp5free-main-algorithms)
-2. [Helper Methods](#helper-methods)
-3. [Support Algorithms](#support-algorithms)
-4. [Graph Generation Algorithms](#graph-generation-algorithms)
-5. [Overall Complexity Summary](#overall-complexity-summary)
+1. [Formal Theorems (see THEOREMS_AND_PROOFS.md)](#formal-theorems)
+2. [ISP5Free Main Algorithms](#isp5free-main-algorithms)
+3. [Helper Methods](#helper-methods)
+4. [Support Algorithms](#support-algorithms)
+5. [Graph Generation Algorithms](#graph-generation-algorithms)
+6. [Overall Complexity Summary](#overall-complexity-summary)
+
+---
+
+## Important Note
+
+**For formal theorems, rigorous proofs, and mathematical foundations**, see:
+📄 **[THEOREMS_AND_PROOFS.md](./THEOREMS_AND_PROOFS.md)**
+
+This document includes:
+- **Theorem 2.1**: Main polynomial time result (O(n⁸))
+- **Theorem 2.2-2.4**: Component complexity proofs
+- **Lemmas 3.1-3.11**: Supporting mathematical results
+- **Theorem 5.1**: Correctness proof
+- **Theorem 6.1-6.2**: Lower bound analysis
+- Complete structural properties and rigorous proofs
 
 ---
 
@@ -18,6 +34,21 @@
 - `|CC|` = number of connected components
 - `d` = maximum degree of a vertex
 - `k` = size of a specific vertex set
+
+---
+
+## Formal Theorems
+
+### Main Result
+
+**Theorem 2.1 (Polynomial Time Algorithm)**: The maximum independent set problem on P5-free graphs can be solved in time **O(n⁸)**.
+
+**Proof**: See THEOREMS_AND_PROOFS.md, Section 2.
+
+**Key Components**:
+- PMC enumeration: O(n²) PMCs exist (Lemma 3.1)
+- Constructor: O(n⁴ + n³m) (Theorem 2.2, 2.3)
+- DP algorithm: O(|Pi|² · |Delta| · |CC| · m) = O(n⁸) (Theorem 2.4)
 
 ---
 
